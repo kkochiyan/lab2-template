@@ -6,6 +6,9 @@ on:
   pull_request:
     branches:
       - master
+permissions:
+  contents: read
+  checks: write
 jobs:
   build:
     name: Autograding
@@ -66,7 +69,19 @@ jobs:
         id: autograder
         continue-on-error: true
 
+      - name: Check whether Google Sheets reporting is configured
+        id: sheets_config
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          if [[ -n "$GOOGLE_API_KEY" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Skipping Google Sheets reporting because GOOGLE_API_KEY is not configured."
+          fi
+
       - name: Github auto grader mark
+        if: steps.sheets_config.outputs.enabled == 'true'
         uses: Romanow/google-sheet-autograder-marker@v1.0
         with:
           google_token: ${{secrets.GOOGLE_API_KEY}}
