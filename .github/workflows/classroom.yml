@@ -17,11 +17,34 @@ jobs:
 
       - uses: docker/setup-buildx-action@v2
 
-      # TODO build and run unit tests
-
       - name: Build images
         timeout-minutes: 10
         run: docker compose build
+
+      - name: Run Payment Service tests
+        run: |
+          docker compose run --rm --no-deps \
+            -v "$PWD/payment-service/tests:/app/tests:ro" \
+            payment-service python -m unittest discover -s tests -v
+
+      - name: Run Reservation Service tests
+        run: |
+          docker compose run --rm --no-deps \
+            -v "$PWD/reservation-service/tests:/app/tests:ro" \
+            reservation-service python -B -m unittest discover -s tests -v
+
+      - name: Run Gateway Service tests
+        run: |
+          docker compose run --rm --no-deps \
+            -v "$PWD/gateway-service/tests:/app/tests:ro" \
+            gateway-service python -B -m unittest discover -s tests -v
+
+      - name: Run Loyalty Service tests
+        run: |
+          docker compose run --rm --no-deps \
+            -v "$PWD/loyalty-service/tests:/app/tests:ro" \
+            -v "$PWD/loyalty-service/seed.sql:/app/seed.sql:ro" \
+            loyalty-service python -m unittest discover -s tests -v
 
       - name: Run containers
         timeout-minutes: 5
@@ -34,9 +57,8 @@ jobs:
       - name: Run API Tests
         uses: matt-ball/newman-action@master
         with:
-          # TODO insert your variant
-          collection: <variant>/postman/collection.json
-          environment: <variant>/postman/environment.json
+          collection: v2/postman/collection.json
+          environment: v2/postman/environment.json
           delayRequest: 100
           reporters: '[ "cli" ]'
 
